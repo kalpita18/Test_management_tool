@@ -93,7 +93,16 @@ def get_all_suites_details(db):
                     TestSuite.name.label("suite_name"),
                     Project.name.label("project_name")).join(Project, TestSuite.project_id==Project.id)\
                     .order_by(TestSuite.id).all())
-                        
-    #print(suites)
     # Convert each row to a dict cleanly
     return [dict(row._mapping) for row in suites]
+
+def delete_suite_crud(db, suite_id:int):
+    #count_ts = db.query(TestCase).filter(TestCase.suite_id ==suite_id).all
+    #if len(count_ts)!=0:
+    #    return "Kindly delete the test cases first linked to this suite before suite"
+    #else:
+    del_s = db.query(TestSuite).filter(TestSuite.id == suite_id).first()
+    db.delete(del_s)
+    db.commit()
+    message = f"Test Suite got deleted"
+    return message

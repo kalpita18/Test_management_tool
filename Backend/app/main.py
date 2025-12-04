@@ -7,6 +7,7 @@ from db import *
 from models import *
 from crud import *
 from fastapi.responses import JSONResponse
+from typing import Dict
 
 
 @asynccontextmanager
@@ -14,9 +15,9 @@ async def lifespan(app:FastAPI): #this code will get execute once server has sta
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        default_project = db.query(Project).filter(Project.name == "Default Project").first()
+        default_project = db.query(Project).filter(Project.name == "SAMS").first()
         if not default_project:
-            p = Project(name="Default Project")
+            p = Project(name="SAMS")
             db.add(p)
             db.commit()
             db.refresh(p)
@@ -151,5 +152,63 @@ def get_all_suites():
     try:
         data_suites = get_all_suites_details(db)
         return data_suites
+    finally:
+        db.close()
+
+@app.delete("/api/suites/{suite_id}")
+def delete_suite(suite_id:int):
+    db = SessionLocal()
+    try:
+        del_suite = delete_suite_crud(db, suite_id)
+        return del_suite
+    finally:
+        db.close()
+
+@app.post("/api/testcases/single/")
+def add_single_tc(item: Dict):
+    db = SessionLocal()
+    try:
+        tc = TestCase(
+                        suite_id=item["suite_id_tc"],
+                        title=item["title_tc"],
+                        description=item.get("description") or "",
+                        priority=item.get("priority_tc") or "",
+                        steps=item.get("steps_tc") or "",
+                    )
+        db.add(tc)
+        db.commit()
+        db.refresh(tc)
+        return "Test case got added successfully"
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        db.close()
+
+
+@app.get("/api/projects")
+def get_projects():
+    db = SessionLocal()
+    try:
+        data_proj = db.query(Project).order_by(Project.id).all()
+        return data_proj
+    finally:
+        db.close()
+
+@app.post("/api/add/suite")
+def add_suite(item_suite: Dict):
+    db = SessionLocal()
+    try:
+        ts = TestSuite(
+                        project_id = item_suite["projectid"],
+                        name=item_suite["suitename"],
+                    )
+        db.add(ts)
+        db.commit()
+        db.refresh(ts)
+        return "Test Suite got added successfully"
+    except SQLAlchemyError as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         db.close()
