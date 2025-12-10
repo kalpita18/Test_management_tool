@@ -1,5 +1,5 @@
 from sqlalchemy import select
-from models import TestCase, TestExecution, TestSuite, Project
+from .models import TestCase, TestExecution, TestSuite, Project
 from collections import Counter
 
 def get_cases_with_latest_status(db, suite_id: int):

@@ -5,8 +5,11 @@ import pandas as pd
 from st_aggrid import AgGrid, GridOptionsBuilder, JsCode, GridUpdateMode, DataReturnMode
 import matplotlib.pyplot as plt
 from datetime import datetime
+import os
 
-API_BASE = "http://localhost:8000/api"
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:8000")
+
+API_BASE = BACKEND_URL
 st.set_page_config(page_title="Test Case Management", layout="wide")
 #st.title("Test Case Management")
 
@@ -15,7 +18,7 @@ tab = st.sidebar.radio("Select",("🧪 Test Suites","📋 Test Cases & Summary",
 #we have cached this suites table to avoid fetching everytime from db
 @st.cache_data
 def fetch_suites():
-    suites_data = httpx.get(f"{API_BASE}/suites", timeout=10)
+    suites_data = httpx.get(f"{API_BASE}/api/suites", timeout=10)
     if suites_data.status_code==200:
         return suites_data.json()
     else:
@@ -23,7 +26,7 @@ def fetch_suites():
 
 
 def fetch_projects():
-    projects_data = httpx.get(f"{API_BASE}/projects", timeout=10)
+    projects_data = httpx.get(f"{API_BASE}/api/projects", timeout=10)
     return projects_data.json()
 
 if tab == "🧪 Test Suites":
@@ -48,7 +51,7 @@ if tab == "🧪 Test Suites":
         if submitted:
             if name!='':
                 payload = {"projectid":project_id, "suitename": name}
-                resp_suite = httpx.post(f"{API_BASE}/add/suite", json=payload)
+                resp_suite = httpx.post(f"{API_BASE}/api/add/suite", json=payload)
                 if resp_suite.status_code!=200:
                     st.error(resp_suite.text)
                 else:
@@ -92,7 +95,7 @@ if tab == "📋 Test Cases & Summary":
         st.write("")
         st.write("")
     if delete_tcs.button("🗑️ Delete test cases"):
-        delete_case = httpx.delete(f"{API_BASE}/suites/{suite_idd}/cases")
+        delete_case = httpx.delete(f"{API_BASE}/api/suites/{suite_idd}/cases")
         if delete_case.status_code!=200:
             st.error(delete_case.text)
         else:
@@ -114,7 +117,7 @@ if tab == "📋 Test Cases & Summary":
         st.warning("This will delete the linked test cases as well. Are you sure?")
         yes, no = st.columns(2)
         if yes.button("Yes", key="confirm_delete_yes"):
-            resp_suite = httpx.delete(f"{API_BASE}/suites/{suite_idd}")
+            resp_suite = httpx.delete(f"{API_BASE}/api/suites/{suite_idd}")
             if resp_suite.status_code==200:
                 st.success(resp_suite.text)
                 st.session_state["confirm_delete_suite"] = False
@@ -141,7 +144,7 @@ if tab == "📋 Test Cases & Summary":
     #load test cases for that particular suite it
     if st.session_state["refresh_suite"] == True:
         try:
-            resp = httpx.get(f"{API_BASE}/suites/{suite_idd}/cases", timeout=10)
+            resp = httpx.get(f"{API_BASE}/api/suites/{suite_idd}/cases", timeout=10)
         except Exception as e:
             st.error(f"Could not reach backend: {e}")
             st.stop()
@@ -222,7 +225,7 @@ if tab == "📋 Test Cases & Summary":
                 #st.write("DEBUG: selected rows count:", len(selected))
                 if selected:
                     preview = selected[0]
-                    id_select_resp = httpx.get(f"{API_BASE}/cases/{preview['id']}", timeout=10)
+                    id_select_resp = httpx.get(f"{API_BASE}/api/cases/{preview['id']}", timeout=10)
                     if id_select_resp.status_code!=200:
                         st.error(f"Failed to load test case: {id_select_resp.text}")
                     else:
@@ -233,7 +236,7 @@ if tab == "📋 Test Cases & Summary":
                         #displays test case data
                         st.markdown(f"### Test Case: {case_d['id']} - {case_d['title']}  ")
                         if case_d.get("description"):
-                            st.write(f"**Description:** {case_d["description"]}")
+                            st.write(f"**Description:** {case_d['description']}")
                         if case_d.get("priority"):
                             st.write(f"**Priority:** {case_d['priority']}")
                         st.write("**Steps:**")
@@ -254,28 +257,28 @@ if tab == "📋 Test Cases & Summary":
 
                         col1, col2, col3, col4 = st.columns(4)
                         if col1.button("PASS ✅"): #text on buttom
-                            resp = httpx.post(f"{API_BASE}/execute/{case_d['id']}", params={"status": "PASS", "retry": False, "comment": comment})
+                            resp = httpx.post(f"{API_BASE}/api/execute/{case_d['id']}", params={"status": "PASS", "retry": False, "comment": comment})
                             if resp.status_code!=200:
                                 st.error(resp.text)
                             else:
                                 st.success("Recorded PASSED")
                                 st.rerun()
                         if col2.button("FAIL 🟫"):
-                            resp = httpx.post(f"{API_BASE}/execute/{case_d['id']}", params={"status": "FAIL", "retry": False, "comment": comment})
+                            resp = httpx.post(f"{API_BASE}/api/execute/{case_d['id']}", params={"status": "FAIL", "retry": False, "comment": comment})
                             if resp.status_code!=200:
                                 st.error(resp.text)
                             else:
                                 st.success("Recorded FAILED")
                                 st.rerun()
                         if col3.button("BLOCKER 🔴"):
-                            resp = httpx.post(f"{API_BASE}/execute/{case_d['id']}", params={"status": "BLOCKER", "retry": False, "comment": comment})
+                            resp = httpx.post(f"{API_BASE}/api/execute/{case_d['id']}", params={"status": "BLOCKER", "retry": False, "comment": comment})
                             if resp.status_code!=200:
                                 st.error(resp.text)
                             else:
                                 st.success("Recorded BLOCKER")
                                 st.rerun()
                         if col4.button("IN PROGRESS 🔵"):
-                            resp = httpx.post(f"{API_BASE}/execute/{case_d['id']}", params={"status": "IN PROGRESS", "retry": False, "comment": comment})
+                            resp = httpx.post(f"{API_BASE}/api/execute/{case_d['id']}", params={"status": "IN PROGRESS", "retry": False, "comment": comment})
                             if resp.status_code!=200:
                                 st.error(resp.text)
                             else:
@@ -291,7 +294,7 @@ if tab == "📋 Test Cases & Summary":
                 st.markdown("-----------")
                 st.subheader("📈 Test summary  status")
 
-                resp_summ = httpx.get(f"{API_BASE}/suites/{suite_idd}/summary")
+                resp_summ = httpx.get(f"{API_BASE}/api/suites/{suite_idd}/summary")
                 if resp_summ.status_code!=200:
                     st.error(resp_summ.text)
                 else:
@@ -331,7 +334,7 @@ if tab == "📤 Upload Test cases":
         if uploaded.name.endswith(".xlsx")
         else "application/vnd.ms-excel")
         files = {"file": (uploaded.name, uploaded.getvalue(), mime)}
-        resp = httpx.post(f"{API_BASE}/testcases/upload", files=files)
+        resp = httpx.post(f"{API_BASE}/api/testcases/upload", files=files)
         if resp.status_code == 200:
             st.success("Test cases got uploaded successfully")
             #st.json(resp.json())
@@ -353,7 +356,7 @@ if tab == "📤 Upload Test cases":
             if title!="":
                 payload = {"suite_id_tc":suite_id, "title_tc":title,
                                 "steps_tc":steps, "priority_tc":priority}
-                resp = httpx.post(f"{API_BASE}/testcases/single/", json=payload)
+                resp = httpx.post(f"{API_BASE}/api/testcases/single/", json=payload)
                 if resp.status_code!=200:
                     st.error(resp.text)
                 else:

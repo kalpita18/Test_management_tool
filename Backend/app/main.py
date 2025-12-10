@@ -1,11 +1,11 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 import httpx
-from utils import parse_testcase_excel
+from .utils import parse_testcase_excel
 from contextlib import asynccontextmanager
 from sqlalchemy.exc import SQLAlchemyError
-from db import *
-from models import *
-from crud import *
+from .db import *
+from .models import *
+from .crud import *
 from fastapi.responses import JSONResponse
 from typing import Dict
 

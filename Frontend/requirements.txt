@@ -1,0 +1,5 @@
+streamlit
+httpx
+streamlit-aggrid
+matplotlib
+openpyxl
